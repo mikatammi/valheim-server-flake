@@ -17,6 +17,9 @@
     # The Steam Nix fetcher only supports x86_64 Linux.
     supportedSystems = ["x86_64-linux"];
     forAllSystems = nixpkgs.lib.genAttrs supportedSystems;
+    # Repository tooling (formatter, update script) runs on any host.
+    hostSystems = supportedSystems ++ ["aarch64-linux" "x86_64-darwin" "aarch64-darwin"];
+    forHostSystems = nixpkgs.lib.genAttrs hostSystems;
     pkgsFor = system:
       import nixpkgs {
         inherit system;
@@ -52,7 +55,13 @@
       '';
     });
 
-    formatter = forAllSystems (system: (pkgsFor system).alejandra);
+    formatter = forHostSystems (system: let
+      pkgs = pkgsFor system;
+    in
+      # `nix fmt` passes no arguments by default, and alejandra would then read stdin.
+      pkgs.writeShellScriptBin "alejandra" ''
+        exec ${nixpkgs.lib.getExe pkgs.alejandra} "''${@:-.}"
+      '');
 
     nixosModules = rec {
       valheim = import ./nixos-modules/valheim.nix {inherit self steam-fetcher;};
@@ -64,10 +73,15 @@
       valheim-bepinex-pack = final.callPackage ./pkgs/bepinex-pack {};
       fetchValheimThunderstoreMod = final.callPackage ./pkgs/build-support/fetch-thunderstore-mod {};
     };
-    packages = forAllSystems (system: let
+    packages = forHostSystems (system: let
       pkgs = pkgsFor system;
-    in {
-      valheim-server = pkgs.valheim-server;
-    });
+    in
+      {
+        # The update script only talks to Steam and Nix, so it runs on any host.
+        update-valheim-server = pkgs.valheim-server-unwrapped.updateScript;
+      }
+      // nixpkgs.lib.optionalAttrs (builtins.elem system supportedSystems) {
+        inherit (pkgs) valheim-server valheim-server-unwrapped;
+      });
   };
 }

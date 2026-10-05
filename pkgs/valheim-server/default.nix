@@ -2,6 +2,7 @@
   lib,
   stdenv,
   fetchSteam,
+  callPackage,
 }:
 stdenv.mkDerivation (finalAttrs: {
   name = "valheim-server";
@@ -34,6 +35,8 @@ stdenv.mkDerivation (finalAttrs: {
 
     runHook postInstall
   '';
+
+  passthru.updateScript = callPackage ./update.nix {};
 
   meta = with lib; {
     description = "Valheim dedicated server";

@@ -22,5 +22,7 @@ buildFHSEnv {
     pulseaudio
   ];
 
+  passthru = {inherit (valheim-server-unwrapped) updateScript;};
+
   inherit (valheim-server-unwrapped) meta;
 }

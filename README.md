@@ -101,13 +101,17 @@ $ journalctl -u valheim -f
 ```
 
 ## Updating to the latest server build
-The server version is pinned to a Steam manifest in `pkgs/valheim-server/default.nix`. To check whether a newer build exists, and to pin it if so:
+The server version is pinned to a Steam manifest in `pkgs/valheim-server/default.nix`. To check whether a newer build exists, and to pin it if so, run this from the root of the repository:
 
 ```sh
-$ scripts/update-valheim-server.sh
+# On any host, including macOS (building the depot needs an x86_64-linux builder).
+$ nix run .#update-valheim-server
+
+# The same script, through the package's passthru.updateScript (x86_64-linux).
+$ nix run .#valheim-server.updateScript
 ```
 
-The script does nothing if the pinned manifest is already the latest one. Otherwise it downloads the new depot (~2 GiB) and updates the manifest, hash and version in place. The file is restored if any step fails, so review the reported diff before committing it.
+The script does nothing if the pinned manifest is already the latest one. Otherwise it downloads the new depot (~2 GiB) and updates the manifest, hash and version in place. It asks Steam for the manifest, gets the hash by building the depot fetcher, and reads the version from `assembly_valheim.dll` in the downloaded depot. The file is only written once all three are known, so a failed run changes nothing.
 
 ## Notes on using mods
 Because BepInEx (the mod framework used by just about every Valheim mod) must both be installed in-tree with Valheim, and to be able to write to various files in the directory tree, we cannot run the modded Valheim server from the Nix store.  To work around this without completely giving up on immutability, we copy the files out of the Nix store to a directory under `/var/lib/valheim` and run from there, but wipe and rebuild this directory on each launch.

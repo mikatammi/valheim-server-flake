@@ -53,6 +53,9 @@
       fmt = pkgs.runCommandLocal "alejandra" {} ''
         ${pkgs.alejandra}/bin/alejandra --check ${./.} > "$out"
       '';
+      # Run after updating valheim-server: the new build must boot and
+      # report the pinned version.
+      server-boots = pkgs.testers.runNixOSTest (import ./nixos-tests/valheim.nix {inherit self;});
     });
 
     formatter = forHostSystems (system: let

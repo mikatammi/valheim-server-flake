@@ -113,5 +113,11 @@ $ nix run .#valheim-server.updateScript
 
 The script does nothing if the pinned manifest is already the latest one. Otherwise it downloads the new depot (~2 GiB) and updates the manifest, hash and version in place. It asks Steam for the manifest, gets the hash by building the depot fetcher, and reads the version from `assembly_valheim.dll` in the downloaded depot. The file is only written once all three are known, so a failed run changes nothing.
 
+Before committing, check that the new build boots through the NixOS module and reports the pinned version (needs an x86_64-linux machine with KVM):
+
+```sh
+$ nix build -L .#checks.x86_64-linux.server-boots
+```
+
 ## Notes on using mods
 Because BepInEx (the mod framework used by just about every Valheim mod) must both be installed in-tree with Valheim, and to be able to write to various files in the directory tree, we cannot run the modded Valheim server from the Nix store.  To work around this without completely giving up on immutability, we copy the files out of the Nix store to a directory under `/var/lib/valheim` and run from there, but wipe and rebuild this directory on each launch.
